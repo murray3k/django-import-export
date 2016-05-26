@@ -340,6 +340,10 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 if list(field.get_value(instance).all()) != list(field.get_value(original).all()):
                     return False
             except AttributeError:
+                if not field.get_value(original) and not field.get_value(instance):
+                    continue
+                if isinstance(field.get_value(original), int) and int(field.get_value(instance)) == int(field.get_value(original)):
+                    continue
                 if field.get_value(instance) != field.get_value(original):
                     return False
         return True
