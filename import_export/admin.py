@@ -345,7 +345,13 @@ class ExportMixin(ImportExportMixinBase):
 
     def get_export_filename(self, file_format):
         date_str = datetime.now().strftime('%Y-%m-%d')
-        filename = "%s-%s.%s" % (self.model.__name__,
+
+        model_name = self.model.__name__
+        resource = self.get_resource_class()
+        if resource._meta.verbose_name:
+            model_name = self.model._meta.verbose_name_plural
+
+        filename = "%s-%s.%s" % (model_name,
                                  date_str,
                                  file_format.get_extension())
         return filename
