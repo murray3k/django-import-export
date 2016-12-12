@@ -123,7 +123,10 @@ class ResourceOptions(object):
     """
     Controls if the result reports skipped rows Default value is True
     """
-
+    verbose_name = False
+    """
+    Controls if column name used from Django's model verbose_name attribute. Default value is False
+    """
 
 class DeclarativeMetaclass(type):
 
@@ -372,6 +375,10 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 if list(field.get_value(instance).all()) != list(field.get_value(original).all()):
                     return False
             except AttributeError:
+                if not field.get_value(original) and not field.get_value(instance):
+                    continue
+                if isinstance(field.get_value(original), int) and int(field.get_value(instance)) == int(field.get_value(original)):
+                    continue
                 if field.get_value(instance) != field.get_value(original):
                     return False
         return True
@@ -734,8 +741,11 @@ class ModelResource(six.with_metaclass(ModelDeclarativeMetaclass, Resource)):
             result = functools.partial(widgets.ManyToManyWidget,
                                        model=f.rel.to)
         if internal_type in ('ForeignKey', 'OneToOneField', ):
+            field = 'pk'
+            if f.remote_field.field_name:
+                field = f.remote_field.field_name
             result = functools.partial(widgets.ForeignKeyWidget,
-                                       model=f.rel.to)
+                                       model=f.related_model, field=field)
         if internal_type in ('DecimalField', ):
             result = widgets.DecimalWidget
         if internal_type in ('DateTimeField', ):
@@ -779,11 +789,15 @@ class ModelResource(six.with_metaclass(ModelDeclarativeMetaclass, Resource)):
         Returns a Resource Field instance for the given Django model field.
         """
 
+        column_name = field_name
+        if self._meta.verbose_name:
+            column_name = django_field.verbose_name
+
         FieldWidget = self.widget_from_django_field(django_field)
         widget_kwargs = self.widget_kwargs_for_field(field_name)
         field = Field(
             attribute=field_name,
-            column_name=field_name,
+            column_name=column_name,
             widget=FieldWidget(**widget_kwargs),
             readonly=readonly,
             default=django_field.default,
