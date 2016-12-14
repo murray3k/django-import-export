@@ -366,6 +366,12 @@ class ExportMixin(ImportExportMixinBase):
         list_display = self.get_list_display(request)
         list_display_links = self.get_list_display_links(request, list_display)
 
+        # Check actions to see if any are available on this changelist
+        actions = self.get_actions(request)
+        if actions:
+            # Add the action checkboxes if there are any actions available.
+            list_display = ['action_checkbox'] + list(list_display)
+
         ChangeList = self.get_changelist(request)
         cl = ChangeList(request, self.model, list_display,
                         list_display_links, self.list_filter,
@@ -376,7 +382,7 @@ class ExportMixin(ImportExportMixinBase):
 
         # query_set has been renamed to queryset in Django 1.8
         try:
-            return cl.queryset
+            return cl.get_queryset(request)
         except AttributeError:
             return cl.query_set
 
